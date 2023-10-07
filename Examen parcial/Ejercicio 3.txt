@@ -1,0 +1,55 @@
+import cv2
+import numpy as np
+import concurrent.futures
+import time
+from google.colab.patches import cv2_imshow
+
+# Función para aplicar un filtro a una sección de la imagen
+def apply_filter(section):
+    print(f"Procesando sección {section}")
+    # Aplica el filtro de desenfoque a la sección de la imagen
+    blurred_section = cv2.GaussianBlur(section, (21, 21), 0)
+    return blurred_section
+
+# Función principal para procesamiento paralelo
+def parallel_processing(image, num_tasks):
+    height, width = image.shape[:2]
+    tasks = []
+    step = height // num_tasks
+
+    # Divide la imagen en secciones
+    for i in range(num_tasks):
+        start = i * step
+        end = start + step
+        if i == num_tasks - 1:
+            end = height
+        section = image[start:end, :]
+        tasks.append(section)
+
+    # Procesa las secciones en paralelo utilizando concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        results = list(executor.map(apply_filter, tasks))
+
+   
+    processed_image = np.vstack(results)
+    return processed_image
+# Cargar la imagen
+image_path = '/content/lobo.jpg'
+original_image = cv2.imread(image_path)
+
+# Realizar el procesamiento paralelo de la imagen
+num_tasks = 54  # Número de tareas
+start_time = time.time()
+processed_image = parallel_processing(original_image, num_tasks)
+end_time = time.time()
+
+# Mostrar los tiempos de ejecución y guardar la imagen procesada
+print(f"Tiempo de ejecución: {end_time - start_time} segundos")
+
+print("Imagen procesada guardada como 'processed_image.jpg'")
+
+# Muestra la imagen procesada en una nueva ventana
+cv2_imshow(cv2.resize(processed_image, (800, 600)))
+ 
+cv2.waitKey(0)
+cv2.destroyAllWindows()
